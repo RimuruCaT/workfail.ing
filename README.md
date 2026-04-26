@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# workfail.ing - 数字游乐场
 
-## Getting Started
+各种好玩的小工具，随时添加新的。
 
-First, run the development server:
+## 功能
+
+- 💬 随机名言生成器 - 生成各种奇怪的名言
+- 🔒 代码混淆器 - 把代码变得不可读
+- 🎨 ASCII艺术生成器 - 文字转ASCII艺术
+- 🌈 随机颜色生成器 - 生成随机颜色和调色板
+- 📊 文本分析工具 - 统计字数、词频、情感分析
+- ⏰ 时间计算器 - 各种时间相关的计算
+- 🖼️ 图片处理工具 - 压缩、裁剪、滤镜
+- 📝 JSON格式化工具 - JSON美化、压缩、验证
+
+## 技术栈
+
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS
+- Vercel
+
+## 部署
+
+1. 创建GitHub仓库
+2. 推送代码到GitHub
+3. 在Vercel中导入项目
+4. 绑定域名 workfail.ing
+
+## 开发
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 构建
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 作者
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Made with ❤️ by OpenCaT
