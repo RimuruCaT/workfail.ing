@@ -2,10 +2,12 @@ import { kv } from "@vercel/kv";
 import type { Post } from "./types";
 
 const POSTS_INDEX_KEY = "posts:index";
+const SLUG_INDEX_KEY = "posts:slugs";
 const POST_KEY_PREFIX = "post:";
 
 export async function getPostIds(): Promise<string[]> {
-  const ids = await kv.lrange<string>(POSTS_INDEX_KEY, 0, -1);
+  // Sorted set indexed by creation timestamp; fetch all members
+  const ids = await kv.zrange<string[]>(POSTS_INDEX_KEY, 0, -1);
   return ids ?? [];
 }
 
@@ -21,17 +23,18 @@ export async function getAllPosts(): Promise<Post[]> {
 }
 
 export async function getPostBySlug(slug: string): Promise<Post | null> {
-  const ids = await getPostIds();
-  for (const id of ids) {
-    const post = await getPost(id);
-    if (post?.slug === slug) return post;
-  }
-  return null;
+  const id = await kv.hget<string>(SLUG_INDEX_KEY, slug);
+  if (!id) return null;
+  return getPost(id);
 }
 
 export async function savePost(post: Post): Promise<void> {
+  const score = new Date(post.createdAt).getTime();
   await kv.set(`${POST_KEY_PREFIX}${post.id}`, post);
-  await kv.lpush(POSTS_INDEX_KEY, post.id);
+  // zadd handles uniqueness — re-adding the same id just updates its score
+  await kv.zadd(POSTS_INDEX_KEY, { score, member: post.id });
+  // Maintain slug → id mapping for O(1) slug lookups
+  await kv.hset(SLUG_INDEX_KEY, { [post.slug]: post.id });
 }
 
 export async function updatePost(
@@ -49,6 +52,7 @@ export async function deletePost(id: string): Promise<boolean> {
   const post = await getPost(id);
   if (!post) return false;
   await kv.del(`${POST_KEY_PREFIX}${id}`);
-  await kv.lrem(POSTS_INDEX_KEY, 0, id);
+  await kv.zrem(POSTS_INDEX_KEY, id);
+  await kv.hdel(SLUG_INDEX_KEY, post.slug);
   return true;
 }
