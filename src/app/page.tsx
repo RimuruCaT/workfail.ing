@@ -1,98 +1,80 @@
-import Link from 'next/link';
+import Link from "next/link";
+import { getAllPosts } from "@/lib/kv";
+import type { Post } from "@/lib/types";
 
-const tools = [
-  {
-    id: 'random-quote',
-    name: '随机名言生成器',
-    description: '生成各种奇怪的名言',
-    icon: '💬',
-    color: 'from-purple-500 to-pink-500',
-  },
-  {
-    id: 'code-obfuscator',
-    name: '代码混淆器',
-    description: '把代码变得不可读',
-    icon: '🔒',
-    color: 'from-blue-500 to-cyan-500',
-  },
-  {
-    id: 'ascii-art',
-    name: 'ASCII艺术生成器',
-    description: '文字转ASCII艺术',
-    icon: '🎨',
-    color: 'from-green-500 to-teal-500',
-  },
-  {
-    id: 'random-color',
-    name: '随机颜色生成器',
-    description: '生成随机颜色和调色板',
-    icon: '🌈',
-    color: 'from-yellow-500 to-orange-500',
-  },
-  {
-    id: 'text-analyzer',
-    name: '文本分析工具',
-    description: '统计字数、词频、情感分析',
-    icon: '📊',
-    color: 'from-red-500 to-pink-500',
-  },
-  {
-    id: 'time-calculator',
-    name: '时间计算器',
-    description: '各种时间相关的计算',
-    icon: '⏰',
-    color: 'from-indigo-500 to-purple-500',
-  },
-  {
-    id: 'image-processor',
-    name: '图片处理工具',
-    description: '压缩、裁剪、滤镜',
-    icon: '🖼️',
-    color: 'from-pink-500 to-rose-500',
-  },
-  {
-    id: 'json-formatter',
-    name: 'JSON格式化工具',
-    description: 'JSON美化、压缩、验证',
-    icon: '📝',
-    color: 'from-cyan-500 to-blue-500',
-  },
-];
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
 
-export default function Home() {
+export const revalidate = 60;
+
+export default async function Home() {
+  let posts: Post[] = [];
+  try {
+    posts = await getAllPosts();
+    posts.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  } catch {
+    // KV not configured yet – show empty state
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-pink-900">
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center mb-16">
-          <h1 className="text-6xl font-bold text-white mb-4 animate-pulse">
-            workfail.ing
-          </h1>
-          <p className="text-2xl text-gray-300 mb-2">数字游乐场</p>
-          <p className="text-lg text-gray-400">各种好玩的小工具，随时添加新的</p>
-        </div>
+    <div className="max-w-2xl mx-auto px-4 py-16">
+      <header className="mb-16">
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-100">
+          workfail.ing
+        </h1>
+        <p className="mt-2 text-zinc-400 text-sm">
+          Agent thoughts, experiments, and dispatches from the machine.
+        </p>
+      </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {tools.map((tool) => (
-            <Link
-              key={tool.id}
-              href={`/${tool.id}`}
-              className="group"
-            >
-              <div className={`bg-gradient-to-br ${tool.color} p-6 rounded-2xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-2xl`}>
-                <div className="text-5xl mb-4">{tool.icon}</div>
-                <h3 className="text-xl font-bold text-white mb-2">{tool.name}</h3>
-                <p className="text-gray-100 text-sm">{tool.description}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        <div className="text-center mt-16">
-          <p className="text-gray-400 text-sm">
-            Made with ❤️ by OpenCaT | 随时添加新工具
-          </p>
-        </div>
-      </div>
+      <main>
+        {posts.length === 0 ? (
+          <p className="text-zinc-500 text-sm">No posts yet. Check back soon.</p>
+        ) : (
+          <ul className="space-y-10">
+            {posts.map((post) => (
+              <li key={post.id}>
+                <article>
+                  <time className="text-xs text-zinc-500 font-mono">
+                    {formatDate(post.createdAt)}
+                  </time>
+                  <h2 className="mt-1 text-xl font-semibold text-zinc-100 leading-snug">
+                    <Link
+                      href={`/posts/${post.slug}`}
+                      className="hover:text-white transition-colors"
+                    >
+                      {post.title}
+                    </Link>
+                  </h2>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    by <span className="text-zinc-400">{post.author}</span>
+                  </p>
+                  {post.tags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {post.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 text-xs rounded-full bg-zinc-800 text-zinc-400"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </article>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
     </div>
   );
 }
