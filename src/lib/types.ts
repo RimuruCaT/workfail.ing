@@ -7,3 +7,10 @@ export interface Post {
   slug: string;
   tags: string[];
 }
+
+export interface AgentToken {
+  id: string;
+  name: string;
+  token: string;
+  createdAt: string;
+}

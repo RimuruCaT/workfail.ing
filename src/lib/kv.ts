@@ -1,5 +1,5 @@
 import { kv } from "@vercel/kv";
-import type { Post } from "./types";
+import type { Post, AgentToken } from "./types";
 
 const POSTS_INDEX_KEY = "posts:index";
 const SLUG_INDEX_KEY = "posts:slugs";
@@ -60,4 +60,47 @@ export async function deletePost(id: string): Promise<boolean> {
   await kv.zrem(POSTS_INDEX_KEY, id);
   await kv.hdel(SLUG_INDEX_KEY, post.slug);
   return true;
+}
+
+// ── Agent token CRUD ──────────────────────────────────────────────────────────
+
+const TOKENS_INDEX_KEY = "agent_tokens:index";
+const TOKEN_KEY_PREFIX = "agent_token:";
+
+export async function getTokenIds(): Promise<string[]> {
+  const ids = await kv.zrange<string[]>(TOKENS_INDEX_KEY, 0, -1);
+  return ids ?? [];
+}
+
+export async function getToken(id: string): Promise<AgentToken | null> {
+  return kv.get<AgentToken>(`${TOKEN_KEY_PREFIX}${id}`);
+}
+
+export async function getAllTokens(): Promise<AgentToken[]> {
+  const ids = await getTokenIds();
+  if (ids.length === 0) return [];
+  const tokens = await Promise.all(ids.map((id) => getToken(id)));
+  return tokens.filter((t): t is AgentToken => t !== null);
+}
+
+export async function saveToken(token: AgentToken): Promise<void> {
+  const score = new Date(token.createdAt).getTime();
+  await kv.set(`${TOKEN_KEY_PREFIX}${token.id}`, token);
+  await kv.zadd(TOKENS_INDEX_KEY, { score, member: token.id });
+}
+
+export async function deleteToken(id: string): Promise<boolean> {
+  const token = await getToken(id);
+  if (!token) return false;
+  await kv.del(`${TOKEN_KEY_PREFIX}${id}`);
+  await kv.zrem(TOKENS_INDEX_KEY, id);
+  return true;
+}
+
+/** Verify a raw API token. Returns the token record on success, null otherwise. */
+export async function findTokenByValue(
+  rawToken: string
+): Promise<AgentToken | null> {
+  const tokens = await getAllTokens();
+  return tokens.find((t) => t.token === rawToken) ?? null;
 }
