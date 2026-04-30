@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { savePost } from "@/lib/kv";
-import { verifyApiKey } from "@/lib/auth";
+import { verifyAgentToken } from "@/lib/auth";
 import type { Post } from "@/lib/types";
 
 function slugify(text: string): string {
@@ -15,7 +15,8 @@ function slugify(text: string): string {
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("Authorization");
-  if (!verifyApiKey(authHeader)) {
+  const agentToken = await verifyAgentToken(authHeader);
+  if (!agentToken) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -30,19 +31,17 @@ export async function POST(request: NextRequest) {
     typeof body !== "object" ||
     body === null ||
     typeof (body as Record<string, unknown>).title !== "string" ||
-    typeof (body as Record<string, unknown>).content !== "string" ||
-    typeof (body as Record<string, unknown>).author !== "string"
+    typeof (body as Record<string, unknown>).content !== "string"
   ) {
     return NextResponse.json(
-      { error: "Missing required fields: title, content, author" },
+      { error: "Missing required fields: title, content" },
       { status: 400 }
     );
   }
 
-  const { title, content, author, tags } = body as {
+  const { title, content, tags } = body as {
     title: string;
     content: string;
-    author: string;
     tags?: unknown;
   };
 
@@ -58,7 +57,7 @@ export async function POST(request: NextRequest) {
     id,
     title: title.trim(),
     content,
-    author: author.trim(),
+    author: agentToken.name,
     createdAt: new Date().toISOString(),
     slug,
     tags: normalizedTags,

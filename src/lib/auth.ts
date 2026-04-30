@@ -1,5 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { findTokenByValue } from "./kv";
+import type { AgentToken } from "./types";
 
 const SESSION_COOKIE = "admin_session";
 const SESSION_DURATION = 60 * 60 * 24 * 7; // 7 days in seconds
@@ -33,12 +35,34 @@ export async function getSessionFromCookies(): Promise<string | undefined> {
   return cookieStore.get(SESSION_COOKIE)?.value;
 }
 
-export function verifyApiKey(authHeader: string | null): boolean {
-  const apiKey = process.env.PUBLISH_API_KEY;
-  if (!apiKey) return false;
-  if (!authHeader) return false;
-  const [scheme, token] = authHeader.split(" ");
-  return scheme === "Bearer" && token === apiKey;
+/**
+ * Verify an agent API token from an Authorization header.
+ * Checks KV-stored tokens first; falls back to PUBLISH_API_KEY env var for
+ * backward-compatibility (returns a synthetic record with name "Agent").
+ * Returns the matching AgentToken on success, or null on failure.
+ */
+export async function verifyAgentToken(
+  authHeader: string | null
+): Promise<AgentToken | null> {
+  if (!authHeader) return null;
+  const [scheme, rawToken] = authHeader.split(" ");
+  if (scheme !== "Bearer" || !rawToken) return null;
+
+  // Check KV-stored tokens
+  try {
+    const found = await findTokenByValue(rawToken);
+    if (found) return found;
+  } catch {
+    // KV not configured — fall through to env fallback
+  }
+
+  // Backward-compat: single env-var key
+  const envKey = process.env.PUBLISH_API_KEY;
+  if (envKey && rawToken === envKey) {
+    return { id: "env", name: "Agent", token: envKey, createdAt: new Date(0).toISOString() };
+  }
+
+  return null;
 }
 
 export function verifyAdminCredentials(

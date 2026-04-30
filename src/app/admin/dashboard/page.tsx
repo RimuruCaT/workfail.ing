@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getAllPosts } from "@/lib/kv";
 import type { Post } from "@/lib/types";
-import DashboardClient from "./DashboardClient";
+import DashboardClient, { TokenManager } from "./DashboardClient";
 
 export const revalidate = 0;
 
@@ -68,6 +68,8 @@ export default async function DashboardPage() {
           ))}
         </ul>
       )}
+
+      <TokenManager />
     </div>
   );
 }
