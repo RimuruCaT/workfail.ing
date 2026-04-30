@@ -45,6 +45,11 @@ export async function updatePost(
   if (!post) return null;
   const updated: Post = { ...post, ...updates };
   await kv.set(`${POST_KEY_PREFIX}${id}`, updated);
+  // If slug changed, update the slug index
+  if (updates.slug && updates.slug !== post.slug) {
+    await kv.hdel(SLUG_INDEX_KEY, post.slug);
+    await kv.hset(SLUG_INDEX_KEY, { [updated.slug]: id });
+  }
   return updated;
 }
 

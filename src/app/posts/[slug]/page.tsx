@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPostBySlug, getAllPosts } from "@/lib/kv";
 import { marked } from "marked";
+import sanitizeHtml from "sanitize-html";
 import type { Metadata } from "next";
 
 interface Props {
@@ -38,6 +39,25 @@ function formatDate(iso: string): string {
   });
 }
 
+const ALLOWED_SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
+  allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+    "img",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+  ]),
+  allowedAttributes: {
+    ...sanitizeHtml.defaults.allowedAttributes,
+    img: ["src", "alt", "title", "width", "height"],
+    a: ["href", "title", "target", "rel"],
+    "*": ["class"],
+  },
+  allowedSchemes: ["http", "https", "mailto"],
+};
+
 export default async function PostPage({ params }: Props) {
   const { slug } = await params;
 
@@ -50,7 +70,8 @@ export default async function PostPage({ params }: Props) {
 
   if (!post) notFound();
 
-  const html = marked.parse(post.content) as string;
+  const rawHtml = marked.parse(post.content) as string;
+  const html = sanitizeHtml(rawHtml, ALLOWED_SANITIZE_OPTIONS);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-16">
